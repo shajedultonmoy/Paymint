@@ -1,0 +1,13 @@
+
+> paymint-backend@1.0.0 dev
+> nodemon --exec ts-node src/index.ts
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (9) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Server running in development mode on port 5000

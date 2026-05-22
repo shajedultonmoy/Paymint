@@ -24,7 +24,7 @@ const Login = () => {
       setUser(data);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+      setError(err.response?.data?.message || 'Backend API is unavailable. Start the backend server and try again.');
     } finally {
       setLoading(false);
     }

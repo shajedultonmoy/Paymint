@@ -2,7 +2,7 @@ USE paymint;
 
 INSERT INTO users (id, name, email, password, business_name, phone)
 VALUES
-  (1, 'Demo User', 'demo@paymint.test', '$2b$10$E3aLCO7xG.WeDeAckfInpOyJmNDm7oOCEUPfGBL1uqFT/XsdfQfzO', 'Paymint Studio', '+1 555 0101')
+  (1, 'Demo User', 'demo@paymint.test', '$2b$10$K2a385j5PRx8al8q/6ZzwOM/kCpCshWWZZj5PAD8Flw9bzevh1vX6', 'Paymint Studio', '+1 555 0101')
 ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   email = VALUES(email),

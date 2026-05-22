@@ -25,7 +25,7 @@ const Register = () => {
       setUser(data);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Something went wrong');
+      setError(err.response?.data?.message || 'Backend API is unavailable. Start the backend server and try again.');
     } finally {
       setLoading(false);
     }

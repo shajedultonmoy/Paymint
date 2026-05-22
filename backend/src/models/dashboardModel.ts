@@ -1,8 +1,35 @@
 import { RowDataPacket } from 'mysql2';
-import { pool } from '../config/db';
+import { pool, usingMemoryStore } from '../config/db';
+import { memoryStore } from '../config/memoryStore';
 
 export const DashboardModel = {
   async getSummary(userId: number) {
+    if (usingMemoryStore) {
+      const invoices = memoryStore.invoices.filter((invoice) => invoice.userId === userId);
+      const products = memoryStore.products.filter((product) => product.userId === userId);
+
+      return {
+        totalInvoices: invoices.length,
+        totalRevenue: invoices
+          .filter((invoice) => invoice.status === 'Paid')
+          .reduce((sum, invoice) => sum + Number(invoice.total || 0), 0),
+        pendingAmount: invoices
+          .filter((invoice) => ['Pending', 'Unpaid', 'Overdue'].includes(invoice.status))
+          .reduce((sum, invoice) => sum + Number(invoice.total || 0), 0),
+        paidInvoices: invoices.filter((invoice) => invoice.status === 'Paid').length,
+        totalProducts: products.length,
+        totalStock: products.reduce((sum, product) => sum + Number(product.quantity || 0), 0),
+        recentInvoices: invoices.slice(0, 5).map((invoice) => ({
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          status: invoice.status,
+          total: Number(invoice.total || 0),
+          date: invoice.date,
+          clientName: invoice.clientId?.clientName || invoice.clientId?.name || 'Client',
+        })),
+      };
+    }
+
     const [totals] = await pool.execute<RowDataPacket[]>(
       `SELECT
         COUNT(*) AS total_invoices,

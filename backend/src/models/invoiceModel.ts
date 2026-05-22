@@ -1,5 +1,6 @@
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
-import { pool } from '../config/db';
+import { pool, usingMemoryStore } from '../config/db';
+import { buildMemoryInvoice, memoryStore } from '../config/memoryStore';
 import { calculateInvoiceTotals } from '../services/invoiceService';
 
 export interface InvoiceItemInput {
@@ -69,6 +70,10 @@ const insertItems = async (invoiceId: number, items: InvoiceItemInput[]) => {
 export const InvoiceModel = {
   async generateInvoiceNumber() {
     const year = new Date().getFullYear();
+    if (usingMemoryStore) {
+      return `PMT-${year}-${String(memoryStore.invoices.length + 1).padStart(4, '0')}`;
+    }
+
     const [rows] = await pool.execute<RowDataPacket[]>(
       'SELECT COUNT(*) AS count FROM invoices WHERE YEAR(created_at) = ?',
       [year]
@@ -77,6 +82,10 @@ export const InvoiceModel = {
   },
 
   async findByUser(userId: number) {
+    if (usingMemoryStore) {
+      return memoryStore.invoices.filter((invoice) => invoice.userId === userId);
+    }
+
     const [rows] = await pool.execute<RowDataPacket[]>(
       `SELECT i.*, c.name AS client_name, c.company_name, c.email AS client_email, c.phone AS client_phone, c.address AS client_address
        FROM invoices i
@@ -89,6 +98,10 @@ export const InvoiceModel = {
   },
 
   async findOwnedById(id: string | number, userId: number) {
+    if (usingMemoryStore) {
+      return memoryStore.invoices.find((invoice) => invoice.id === Number(id) && invoice.userId === userId) || null;
+    }
+
     const [invoiceRows] = await pool.execute<RowDataPacket[]>(
       `SELECT i.*, c.name AS client_name, c.company_name, c.email AS client_email, c.phone AS client_phone, c.address AS client_address
        FROM invoices i
@@ -114,6 +127,12 @@ export const InvoiceModel = {
   },
 
   async create(userId: number, input: any) {
+    if (usingMemoryStore) {
+      const invoice = buildMemoryInvoice(userId, input);
+      memoryStore.invoices.unshift(invoice);
+      return invoice;
+    }
+
     const items = input.items || [];
     const { subtotal, tax, discount, total } = calculateInvoiceTotals({ ...input, items });
     const invoiceNumber = input.invoiceNumber || await this.generateInvoiceNumber();
@@ -132,6 +151,13 @@ export const InvoiceModel = {
   async update(id: string | number, userId: number, input: any) {
     const existing = await this.findOwnedById(id, userId);
     if (!existing) return null;
+
+    if (usingMemoryStore) {
+      const index = memoryStore.invoices.findIndex((invoice) => invoice.id === Number(id) && invoice.userId === userId);
+      const invoice = buildMemoryInvoice(userId, input, existing);
+      if (index !== -1) memoryStore.invoices[index] = invoice;
+      return invoice;
+    }
 
     const items = input.items || existing.items || [];
     const { subtotal, tax, discount, total } = calculateInvoiceTotals({
@@ -168,6 +194,13 @@ export const InvoiceModel = {
   },
 
   async remove(id: string | number, userId: number) {
+    if (usingMemoryStore) {
+      const index = memoryStore.invoices.findIndex((invoice) => invoice.id === Number(id) && invoice.userId === userId);
+      if (index === -1) return false;
+      memoryStore.invoices.splice(index, 1);
+      return true;
+    }
+
     const [result] = await pool.execute<ResultSetHeader>('DELETE FROM invoices WHERE id = ? AND user_id = ?', [id, userId]);
     return result.affectedRows > 0;
   },
