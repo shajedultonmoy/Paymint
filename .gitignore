@@ -2,4 +2,10 @@ node_modules/
 dist/
 .env
 .env.*
+!.env.example
+!**/.env.example
 uploads/
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform/*.tfvars

@@ -11,6 +11,7 @@ import clientRoutes from './routes/clientRoutes';
 import productRoutes from './routes/productRoutes';
 import invoiceRoutes from './routes/invoiceRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 import path from 'path';
 
 dotenv.config();
@@ -34,7 +35,12 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'paymint-api' });
+});
+
 app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/invoices', invoiceRoutes);

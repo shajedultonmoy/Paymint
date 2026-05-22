@@ -1,5 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import { sequelize } from './sequelize';
+import '../models/entities';
 
 dotenv.config();
 
@@ -17,6 +19,7 @@ export const pool = mysql.createPool({
 
 const connectDB = async () => {
   try {
+    await sequelize.authenticate();
     const connection = await pool.getConnection();
     await connection.ping();
     connection.release();

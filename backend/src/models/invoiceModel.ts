@@ -1,5 +1,6 @@
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { pool } from '../config/db';
+import { calculateInvoiceTotals } from '../services/invoiceService';
 
 export interface InvoiceItemInput {
   productId?: number | null;
@@ -114,10 +115,7 @@ export const InvoiceModel = {
 
   async create(userId: number, input: any) {
     const items = input.items || [];
-    const subtotal = Number(input.subtotal ?? items.reduce((sum: number, item: InvoiceItemInput) => sum + Number(item.total ?? item.subtotal ?? 0), 0));
-    const tax = Number(input.tax || 0);
-    const discount = Number(input.discount || 0);
-    const total = Number(input.total ?? subtotal + tax - discount);
+    const { subtotal, tax, discount, total } = calculateInvoiceTotals({ ...input, items });
     const invoiceNumber = input.invoiceNumber || await this.generateInvoiceNumber();
 
     const [result] = await pool.execute<ResultSetHeader>(
@@ -136,10 +134,12 @@ export const InvoiceModel = {
     if (!existing) return null;
 
     const items = input.items || existing.items || [];
-    const subtotal = Number(input.subtotal ?? items.reduce((sum: number, item: InvoiceItemInput) => sum + Number(item.total ?? item.subtotal ?? 0), 0));
-    const tax = Number(input.tax ?? existing.tax);
-    const discount = Number(input.discount ?? existing.discount);
-    const total = Number(input.total ?? subtotal + tax - discount);
+    const { subtotal, tax, discount, total } = calculateInvoiceTotals({
+      ...input,
+      items,
+      tax: input.tax ?? existing.tax,
+      discount: input.discount ?? existing.discount,
+    });
 
     await pool.execute(
       `UPDATE invoices

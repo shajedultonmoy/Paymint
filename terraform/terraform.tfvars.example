@@ -1,0 +1,9 @@
+aws_region  = "us-east-1"
+project_name = "paymint"
+ami_id       = "ami-xxxxxxxxxxxxxxxxx"
+key_name     = "your-ec2-keypair"
+admin_cidr   = "203.0.113.10/32"
+
+db_name     = "paymint"
+db_username = "paymint_admin"
+db_password = "replace-with-a-strong-password"

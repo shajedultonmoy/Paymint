@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { FileText, DollarSign, Clock, CheckCircle } from 'lucide-react';
+import { FileText, DollarSign, Clock, CheckCircle, Package } from 'lucide-react';
+import api from '../api/axios';
 
 const data = [
   { name: 'Jan', revenue: 4000 },
@@ -34,6 +36,39 @@ const StatCard = ({ title, value, icon: Icon, trend }: { title: string, value: s
 );
 
 const Dashboard = () => {
+  const [summary, setSummary] = useState({
+    totalInvoices: 0,
+    totalRevenue: 0,
+    pendingAmount: 0,
+    paidInvoices: 0,
+    totalProducts: 0,
+    recentInvoices: [] as Array<{
+      id: number;
+      invoiceNumber: string;
+      clientName: string;
+      total: number;
+      status: string;
+    }>,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const { data } = await api.get('/api/dashboard/summary');
+        setSummary(data);
+      } catch (error) {
+        console.error('Failed to load dashboard summary', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSummary();
+  }, []);
+
+  const money = (value: number) => `$${Number(value || 0).toFixed(2)}`;
+
   return (
     <DashboardLayout>
       <motion.div
@@ -47,10 +82,10 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Total Revenue" value="$45,231.89" icon={DollarSign} trend="+20.1%" />
-          <StatCard title="Invoices Sent" value="124" icon={FileText} trend="+12.5%" />
-          <StatCard title="Pending Payment" value="$12,450.00" icon={Clock} trend="-4.2%" />
-          <StatCard title="Paid Invoices" value="89" icon={CheckCircle} trend="+8.4%" />
+          <StatCard title="Total Revenue" value={loading ? '...' : money(summary.totalRevenue)} icon={DollarSign} />
+          <StatCard title="Invoices Sent" value={loading ? '...' : String(summary.totalInvoices)} icon={FileText} />
+          <StatCard title="Pending Payment" value={loading ? '...' : money(summary.pendingAmount)} icon={Clock} />
+          <StatCard title="Products" value={loading ? '...' : String(summary.totalProducts)} icon={Package} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -80,17 +115,19 @@ const Dashboard = () => {
           <div className="bg-white dark:bg-dark-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-dark-700">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Recent Activity</h3>
             <div className="space-y-6">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center gap-4">
+              {summary.recentInvoices.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No recent invoices yet.</p>
+              ) : summary.recentInvoices.map((invoice) => (
+                <div key={invoice.id} className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
                     <CheckCircle size={20} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Invoice #INV-00{i} paid</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">2 hours ago</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{invoice.invoiceNumber}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{invoice.clientName} - {invoice.status}</p>
                   </div>
                   <div className="ml-auto text-sm font-bold text-gray-900 dark:text-white">
-                    $1,200.00
+                    {money(invoice.total)}
                   </div>
                 </div>
               ))}
