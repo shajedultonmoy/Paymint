@@ -40,7 +40,7 @@ const Login = () => {
       >
         <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-dark-700">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-primary-500/30">
+            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-primary-500/30 motion-safe:float">
               <Wallet size={24} />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h1>

@@ -1,19 +1,18 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
+/* CSS variables for colors and fonts */
+:root {
   --font-sans: 'Inter', system-ui, sans-serif;
-  
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
   --color-primary-500: #3b82f6;
   --color-primary-600: #2563eb;
-  
   --color-secondary-500: #10b981;
-  
   --color-dark-900: #0f172a;
   --color-dark-800: #1e293b;
   --color-dark-700: #334155;
-  
   --color-light-50: #f8fafc;
 }
 
@@ -21,4 +20,55 @@
   body {
     @apply bg-light-50 text-dark-900 dark:bg-dark-900 dark:text-light-50 font-sans antialiased transition-colors duration-200;
   }
+}
+
+/* Animations and utilities */
+@layer utilities {
+  @media (prefers-reduced-motion: reduce) {
+    .motion-safe\:fade-in,
+    .motion-safe\:slide-up,
+    .motion-safe\:float,
+    .motion-safe\:pulse,
+    .animated-card,
+    .animated-btn,
+    .animated-input {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  @keyframes pm-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pm-slide-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pm-float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+    100% { transform: translateY(0); }
+  }
+
+  @keyframes pm-pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.02); opacity: 0.9; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .motion-safe\:fade-in { animation: pm-fade-in 420ms cubic-bezier(.2,.9,.2,1) both; }
+  .motion-safe\:slide-up { animation: pm-slide-up 560ms cubic-bezier(.2,.9,.2,1) both; }
+  .motion-safe\:float { animation: pm-float 4s ease-in-out infinite; }
+  .motion-safe\:pulse { animation: pm-pulse 2.6s ease-in-out infinite; }
+
+  .animated-card { transform-origin: center; animation: pm-fade-in 520ms cubic-bezier(.2,.9,.2,1) both; }
+  .animated-btn { transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms; }
+  .animated-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 24px rgba(59,130,246,0.12); }
+  .animated-btn:active { transform: translateY(-1px) scale(0.995); }
+
+  .animated-input { transition: box-shadow 180ms, transform 180ms; }
+  .animated-input:focus { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(59,130,246,0.06); }
 }

@@ -4,7 +4,7 @@ import { Wallet, ArrowRight, Zap, Shield, Globe } from 'lucide-react';
 import { Button } from '../components/ui/components';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: any, title: string, description: string }) => (
-  <div className="p-6 bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700">
+  <div className="p-6 bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 animated-card">
     <div className="w-12 h-12 bg-primary-50 dark:bg-dark-700 rounded-xl flex items-center justify-center text-primary-600 dark:text-primary-400 mb-4">
       <Icon size={24} />
     </div>
@@ -19,7 +19,7 @@ const Landing = () => {
       {/* Header */}
       <header className="container mx-auto px-4 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center text-white">
+          <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center text-white motion-safe:float">
             <Wallet size={24} />
           </div>
           <span className="text-2xl font-bold text-gray-900 dark:text-white">Paymint</span>
