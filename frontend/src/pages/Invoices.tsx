@@ -19,6 +19,7 @@ interface Invoice {
 const Invoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchInvoices = async () => {
@@ -71,6 +72,21 @@ const Invoices = () => {
       link.remove();
     } catch (error) {
       console.error('Failed to download PDF', error);
+    }
+  };
+
+  const handleSendEmail = async (id: string, invoiceNumber: string) => {
+    if (window.confirm(`Are you sure you want to send invoice ${invoiceNumber} to the client's email?`)) {
+      setSendingId(id);
+      try {
+        const { data } = await api.post(`/api/invoices/${id}/send`);
+        alert(data.message || 'Invoice sent successfully!');
+      } catch (error: any) {
+        console.error('Failed to send email', error);
+        alert(error.response?.data?.message || 'Failed to send email.');
+      } finally {
+        setSendingId(null);
+      }
     }
   };
 
@@ -148,7 +164,12 @@ const Invoices = () => {
                       >
                         <Download size={16} />
                       </button>
-                      <button className="text-gray-400 hover:text-primary-600 transition-colors p-1" title="Send Email">
+                      <button 
+                        onClick={() => handleSendEmail(invoice._id, invoice.invoiceNumber)}
+                        className={`text-gray-400 hover:text-primary-600 transition-colors p-1 ${sendingId === invoice._id ? 'animate-pulse text-primary-500' : ''}`}
+                        title={sendingId === invoice._id ? 'Sending...' : 'Send Email'}
+                        disabled={sendingId !== null}
+                      >
                         <Send size={16} />
                       </button>
                       <button 

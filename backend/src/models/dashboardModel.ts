@@ -2,11 +2,42 @@ import { RowDataPacket } from 'mysql2';
 import { pool, usingMemoryStore } from '../config/db';
 import { memoryStore } from '../config/memoryStore';
 
+const getLast6Months = () => {
+  const months = [];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    months.push({
+      name: monthNames[d.getMonth()],
+      monthIndex: d.getMonth(),
+      year: d.getFullYear(),
+      revenue: 0
+    });
+  }
+  return months;
+};
+
 export const DashboardModel = {
   async getSummary(userId: number) {
     if (usingMemoryStore) {
       const invoices = memoryStore.invoices.filter((invoice) => invoice.userId === userId);
       const products = memoryStore.products.filter((product) => product.userId === userId);
+
+      const monthlyRevenue = getLast6Months();
+      invoices
+        .filter((invoice) => invoice.status === 'Paid')
+        .forEach((invoice) => {
+          const invDate = new Date(invoice.date);
+          const monthIndex = invDate.getMonth();
+          const year = invDate.getFullYear();
+          const bucket = monthlyRevenue.find(
+            (b) => b.monthIndex === monthIndex && b.year === year
+          );
+          if (bucket) {
+            bucket.revenue += Number(invoice.total || 0);
+          }
+        });
 
       return {
         totalInvoices: invoices.length,
@@ -27,6 +58,7 @@ export const DashboardModel = {
           date: invoice.date,
           clientName: invoice.clientId?.clientName || invoice.clientId?.name || 'Client',
         })),
+        monthlyRevenue: monthlyRevenue.map((m) => ({ name: m.name, revenue: m.revenue })),
       };
     }
 
@@ -58,6 +90,28 @@ export const DashboardModel = {
       [userId]
     );
 
+    const [revenueRows] = await pool.execute<RowDataPacket[]>(
+      `SELECT 
+        DATE_FORMAT(invoice_date, '%b') as name,
+        MONTH(invoice_date) as month_index,
+        YEAR(invoice_date) as year,
+        COALESCE(SUM(total_amount), 0) as revenue
+       FROM invoices
+       WHERE user_id = ? AND status = 'Paid'
+       GROUP BY YEAR(invoice_date), MONTH(invoice_date), DATE_FORMAT(invoice_date, '%b')`,
+      [userId]
+    );
+
+    const monthlyRevenue = getLast6Months();
+    monthlyRevenue.forEach((bucket) => {
+      const row = revenueRows.find(
+        (r) => Number(r.month_index) - 1 === bucket.monthIndex && Number(r.year) === bucket.year
+      );
+      if (row) {
+        bucket.revenue = Number(row.revenue || 0);
+      }
+    });
+
     return {
       totalInvoices: Number(totals[0]?.total_invoices || 0),
       totalRevenue: Number(totals[0]?.total_revenue || 0),
@@ -73,6 +127,7 @@ export const DashboardModel = {
         date: invoice.invoice_date,
         clientName: invoice.client_name,
       })),
+      monthlyRevenue: monthlyRevenue.map((m) => ({ name: m.name, revenue: m.revenue })),
     };
   },
 };

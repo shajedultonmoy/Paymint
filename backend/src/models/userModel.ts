@@ -12,6 +12,8 @@ export interface User {
   businessName: string;
   phone: string;
   role: 'user' | 'admin';
+  resetPasswordToken?: string;
+  resetPasswordExpire?: Date;
   createdAt?: Date;
 }
 
@@ -25,6 +27,8 @@ const mapUser = (row: any): User => ({
   businessName: row.business_name || '',
   phone: row.phone || '',
   role: row.role || 'user',
+  resetPasswordToken: row.reset_password_token || undefined,
+  resetPasswordExpire: row.reset_password_expire ? new Date(row.reset_password_expire) : undefined,
   createdAt: row.created_at,
 });
 
@@ -47,6 +51,40 @@ export const UserModel = {
     return rows[0] ? mapUser(rows[0]) : null;
   },
 
+  async findByResetToken(hashedToken: string) {
+    if (usingMemoryStore) {
+      const user = memoryStore.users.find(
+        (u: any) =>
+          u.resetPasswordToken === hashedToken &&
+          u.resetPasswordExpire &&
+          new Date(u.resetPasswordExpire).getTime() > Date.now()
+      );
+      return user || null;
+    }
+
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      'SELECT * FROM users WHERE reset_password_token = ? AND reset_password_expire > NOW() LIMIT 1',
+      [hashedToken]
+    );
+    return rows[0] ? mapUser(rows[0]) : null;
+  },
+
+  async updateResetToken(userId: number, hashedToken: string | null, expire: Date | null) {
+    if (usingMemoryStore) {
+      const index = memoryStore.users.findIndex((u) => u.id === userId);
+      if (index !== -1) {
+        (memoryStore.users[index] as any).resetPasswordToken = hashedToken || undefined;
+        (memoryStore.users[index] as any).resetPasswordExpire = expire || undefined;
+      }
+      return;
+    }
+
+    await pool.execute(
+      'UPDATE users SET reset_password_token = ?, reset_password_expire = ? WHERE id = ?',
+      [hashedToken, expire, userId]
+    );
+  },
+
   async updatePassword(id: number, passwordHash: string) {
     if (usingMemoryStore) {
       const index = memoryStore.users.findIndex((u) => u.id === id);
@@ -54,6 +92,37 @@ export const UserModel = {
       return;
     }
     await pool.execute('UPDATE users SET password = ? WHERE id = ?', [passwordHash, id]);
+  },
+
+  async updateProfile(userId: number, data: { name: string; businessName: string; phone: string; avatar?: string }) {
+    if (usingMemoryStore) {
+      const index = memoryStore.users.findIndex((u) => u.id === userId);
+      if (index !== -1) {
+        memoryStore.users[index] = {
+          ...memoryStore.users[index],
+          name: data.name,
+          businessName: data.businessName,
+          phone: data.phone,
+          avatar: data.avatar !== undefined ? data.avatar : memoryStore.users[index].avatar,
+        };
+        return memoryStore.users[index] as User;
+      }
+      return null;
+    }
+
+    if (data.avatar !== undefined) {
+      await pool.execute(
+        'UPDATE users SET name = ?, business_name = ?, phone = ?, avatar = ? WHERE id = ?',
+        [data.name, data.businessName, data.phone, data.avatar, userId]
+      );
+    } else {
+      await pool.execute(
+        'UPDATE users SET name = ?, business_name = ?, phone = ? WHERE id = ?',
+        [data.name, data.businessName, data.phone, userId]
+      );
+    }
+
+    return this.findById(userId);
   },
 
   async create(userData: { name: string; email: string; password: string }) {

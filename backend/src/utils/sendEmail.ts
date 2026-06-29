@@ -1,6 +1,18 @@
 import nodemailer from 'nodemailer';
 
-const sendEmail = async (options: { email: string, subject: string, message: string }) => {
+interface SendEmailOptions {
+  email: string;
+  subject: string;
+  message: string;
+  html?: string;
+  attachments?: Array<{
+    filename: string;
+    content: any;
+    contentType?: string;
+  }>;
+}
+
+const sendEmail = async (options: SendEmailOptions) => {
   // Create a transporter
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.mailtrap.io',
@@ -12,13 +24,20 @@ const sendEmail = async (options: { email: string, subject: string, message: str
   });
 
   // Define email options
-  const mailOptions = {
+  const mailOptions: any = {
     from: 'Paymint <noreply@paymint.com>',
     to: options.email,
     subject: options.subject,
     text: options.message,
-    // html: options.html,
   };
+
+  if (options.html) {
+    mailOptions.html = options.html;
+  }
+
+  if (options.attachments) {
+    mailOptions.attachments = options.attachments;
+  }
 
   // Send the email
   await transporter.sendMail(mailOptions);

@@ -11,6 +11,8 @@ import Settings from './pages/Settings';
 import ClientForm from './pages/ClientForm';
 import ProductForm from './pages/ProductForm';
 import InvoiceForm from './pages/InvoiceForm';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useAuthStore((state) => state.user);
@@ -27,6 +29,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/" element={<Landing />} />
           <Route 
             path="/dashboard" 

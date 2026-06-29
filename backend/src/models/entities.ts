@@ -11,6 +11,8 @@ UserEntity.init({
   businessName: { type: DataTypes.STRING(160), field: 'business_name', defaultValue: '' },
   phone: { type: DataTypes.STRING(40), defaultValue: '' },
   role: { type: DataTypes.ENUM('user', 'admin'), defaultValue: 'user' },
+  resetPasswordToken: { type: DataTypes.STRING(255), field: 'reset_password_token', defaultValue: null, allowNull: true },
+  resetPasswordExpire: { type: DataTypes.DATE, field: 'reset_password_expire', defaultValue: null, allowNull: true },
   createdAt: { type: DataTypes.DATE, field: 'created_at' },
 }, {
   sequelize,

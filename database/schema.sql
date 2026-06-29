@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
   business_name VARCHAR(160) DEFAULT '',
   phone VARCHAR(40) DEFAULT '',
   role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+  reset_password_token VARCHAR(255) DEFAULT NULL,
+  reset_password_expire TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY idx_users_email (email)

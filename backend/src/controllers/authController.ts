@@ -95,10 +95,96 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
   });
 });
 
+import crypto from 'crypto';
+import sendEmail from '../utils/sendEmail';
+
 export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
-  res.status(501).json({ message: 'Forgot password feature is under development' });
+  const { email } = req.body;
+  if (!email) {
+    res.status(400);
+    throw new Error('Email is required');
+  }
+
+  const user = await UserModel.findByEmail(email);
+  if (!user) {
+    res.status(404);
+    throw new Error('There is no user with that email');
+  }
+
+  const resetToken = crypto.randomBytes(20).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const expireDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  await UserModel.updateResetToken(user.id, hashedToken, expireDate);
+
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
+  const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please use the following link to reset your password:\n\n${resetUrl}\n\nThis link will expire in 10 minutes.`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Paymint Password Reset Request',
+      message,
+    });
+
+    res.json({ message: 'Reset link sent to your email' });
+  } catch (err: any) {
+    await UserModel.updateResetToken(user.id, null, null);
+    res.status(500);
+    throw new Error(`Email could not be sent: ${err.message}`);
+  }
 });
 
 export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
-  res.status(501).json({ message: 'Reset password feature is under development' });
+  const resettoken = String(req.params.resettoken);
+  const { password } = req.body;
+
+  if (!password) {
+    res.status(400);
+    throw new Error('Password is required');
+  }
+
+  const hashedToken = crypto.createHash('sha256').update(resettoken).digest('hex');
+  const user = await UserModel.findByResetToken(hashedToken);
+
+  if (!user) {
+    res.status(400);
+    throw new Error('Invalid or expired reset token');
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await UserModel.updatePassword(user.id, hashedPassword);
+  await UserModel.updateResetToken(user.id, null, null);
+
+  res.json({ message: 'Password updated successfully' });
+});
+
+export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const user = await UserModel.findById(req.user!.id);
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const { name, businessName, phone, avatar, password } = req.body;
+
+  const updatedUser = await UserModel.updateProfile(user.id, {
+    name: name || user.name,
+    businessName: businessName !== undefined ? businessName : user.businessName,
+    phone: phone !== undefined ? phone : user.phone,
+    avatar: avatar !== undefined ? avatar : user.avatar,
+  });
+
+  if (password) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await UserModel.updatePassword(user.id, hashedPassword);
+  }
+
+  if (!updatedUser) {
+    res.status(500);
+    throw new Error('Failed to update profile');
+  }
+
+  res.json(userResponse(updatedUser));
 });
